@@ -53,7 +53,6 @@ async function init() {
     withErrorHandler(response, async () => {
       const user = await userStorage.signIn(`${body.login}`, `${body.password}`)
       const session = await sessionStorage.createSession(user.username)
-      console.log(session)
       response.cookie('Token', session.token)
       response.send(makeRedirectResponse('/'))
     })
@@ -62,7 +61,9 @@ async function init() {
   app.post('/sign-up', async (request, response) => {
     const { body } = request
     withErrorHandler(response, async () => {
-      await userStorage.createUser(`${body.login}`, `${body.password}`)
+      const user = await userStorage.createUser(`${body.login}`, `${body.password}`)
+      const session = await sessionStorage.createSession(user.username)
+      response.cookie('Token', session.token)
       response.send(makeRedirectResponse('/'))
     })
   })
