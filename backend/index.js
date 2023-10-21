@@ -1,5 +1,5 @@
 const express = require('express')
-const { UserStorage, StorageError } = require('./storage')
+const { UserStorage, SessionStorage, makeStorage } = require('./storage')
 
 const port = 3000
 
@@ -30,6 +30,7 @@ async function withErrorHandler(response, callback) {
   try {
     await callback()
   } catch (error) {
+    console.error(error)
     response.statusCode = 400
     response.send(makeErrorResponse(error))
   }
@@ -38,9 +39,12 @@ async function withErrorHandler(response, callback) {
 async function init() {
   const app = express()
 
-  const storage = await UserStorage.makeStorage('./users.json')
+  /** @type {UserStorage} */
+  const userStorage = await makeStorage(UserStorage, './users.json')
+  /** @type {SessionStorage} */
+  const sessionStorage = await makeStorage(SessionStorage, './sessions.json', userStorage)
 
-  console.log(storage._storage)
+  console.log(userStorage._storage)
   
   app.use(express.static('../frontend/dist'))
   app.use(express.json())
@@ -48,7 +52,10 @@ async function init() {
   app.post('/sign-in', (request, response) => {
     const { body } = request
     withErrorHandler(response, async () => {
-      await storage.signIn(`${body.login}`, `${body.password}`)
+      const user = await userStorage.signIn(`${body.login}`, `${body.password}`)
+      const session = await sessionStorage.createSession(user.username)
+      console.log(session)
+      response.cookie('Token', session.token)
       response.send(makeRedirectResponse('/'))
     })
   })
@@ -56,7 +63,7 @@ async function init() {
   app.post('/sign-up', async (request, response) => {
     const { body } = request
     withErrorHandler(response, async () => {
-      await storage.createUser(`${body.login}`, `${body.password}`)
+      await userStorage.createUser(`${body.login}`, `${body.password}`)
       response.send(makeRedirectResponse('/'))
     })
   })

@@ -1,12 +1,21 @@
 const { stat, writeFile, readFile, copyFile } = require('fs/promises')
-const { Hash } = require('crypto')
+const { Hash, randomBytes } = require('crypto')
 const { salt } = require('./secret.json')
+
+const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000
 
 /**
  * @typedef {Object} User
  * @property {string} username
  * @property {string} saltedPassword
  * @property {string[]} favoriteLocations
+ */
+
+/**
+ * @typedef {Object} Session
+ * @property {string} username
+ * @property {string} token
+ * @property {number} created
  */
 
 /**
@@ -19,6 +28,13 @@ function saltPassword(password) {
   hash.update(password)
   hash.update(salt)
   return hash.digest().toString('base64')
+}
+
+/**
+ * @returns {string}
+ */
+function generateToken() {
+  return randomBytes(16).toString('hex')
 }
 
 class StorageError extends Error { }
@@ -34,17 +50,6 @@ class Storage {
     this._storage = {}
   }
 
-  /**
-   * Создаёт и возвращает новое хранилище
-   * @param {string} filename 
-   * @returns 
-   */
-  static async makeStorage(filename) {
-    const object = new UserStorage(filename)
-    await object._initialize()
-    return object
-  }
-  
   /**
    * Инициализирует хранилище
    * @private
@@ -83,10 +88,11 @@ class Storage {
    * 
    * @param {string} key 
    * @param {any} value 
-   * @returns {void}
+   * @returns {Promise<void>}
    */
-  set(key, value) {
+  async set(key, value) {
     this._storage[key] = value
+    await this._dumpToFile()
   }
 
   /**
@@ -95,7 +101,7 @@ class Storage {
    * @returns {boolean}
    */
   has(key) {
-    return Object.hasOwn(this._storage, key);
+    return Boolean(this._storage[key]);
   }
 }
 
@@ -104,10 +110,10 @@ class UserStorage extends Storage {
    * Создаёт нового пользователя
    * @param {string} username 
    * @param {string} password 
-   * @return {User}
+   * @return {Promise<User>}
    */
   async createUser(username, password) {
-    if (this._storage[username]) {
+    if (this.has(username)) {
       throw new StorageError(`Пользователь ${username} уже существует`)
     }
     const user = {
@@ -115,24 +121,32 @@ class UserStorage extends Storage {
       saltedPassword: saltPassword(password),
       favoriteLocations: [],
     }
-    this._storage[username] = user
 
-    await this._dumpToFile()
-
+    await this.set(username, user)
     return user
   }
-  
+
+  /**
+   * 
+   * @param {string} username 
+   * @returns {User}
+   */
+  getUserByName(username) {
+    const user = this.get(username)
+    if (!user) {
+      throw new StorageError(`Пользователь ${username} не найден`)
+    }
+    return user
+  }
+
   /**
    * Возвращает пользователя по валидной паре логин/пароль
    * @param {string} username 
    * @param {string} password 
-   * @return {User}
+   * @return {Promise<User>}
    */
   async signIn(username, password) {
-    const user = this._storage[username];
-    if (!user) {
-      throw new StorageError(`Пользователь ${username} не найден`)
-    }
+    const user = this.getUserByName(username)
 
     if (user.saltedPassword === saltPassword(password)) {
       return user
@@ -142,7 +156,70 @@ class UserStorage extends Storage {
   }
 }
 
+class SessionStorage extends Storage {
+  /**
+   * 
+   * @param {string} filename 
+   * @param {UserStorage} userStorage 
+   */
+  constructor(filename, userStorage) {
+    super(filename)
+    /** @type {UserStorage} */
+    this.userStorage = userStorage
+  }
+
+  /**
+   * 
+   * @param {string} username
+   * @returns {Promise<Session>}
+   */
+  async createSession(username) {
+    if (!this.userStorage.has(username)) {
+      throw new StorageError(`Не удалось создать сессию: пользователя ${username} не существует`)
+    }
+
+    const token = generateToken()
+    const session = {
+      username,
+      token,
+      created: Date.now()
+    }
+    await this.set(token, session)
+    return session
+  }
+
+  /**
+   * 
+   * @param {string} token 
+   * @returns {User}
+   */
+  async getUserByToken(token) {
+    /** @type {Session} */
+    const session = this.get(token)
+    if (!session) {
+      throw new StorageError(`Невалидный токен`)
+    }
+
+    return this.userStorage.getUserByName()
+  }
+}
+
+/**
+ * Создаёт и возвращает новое хранилище
+ * @param {typeof Storage} theClass
+ * @param {any[]} params 
+ * @returns {Promise<Storage>}
+ */
+async function makeStorage(theClass, ...params) {
+  const object = new theClass(...params)
+  await object._initialize()
+  return object
+}
+  
+
 module.exports = {
   UserStorage,
   StorageError,
+  SessionStorage,
+  makeStorage,
 }
