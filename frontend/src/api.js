@@ -42,5 +42,5 @@ export async function signIn(login, password, shouldCreateNewUser) {
  * @param {string} cityName
  */
 export async function getForecastForCity(cityName) {
-  request(`/weather?city=${cityName}`)
+  return request(`/weather?city=${cityName}`)
 }

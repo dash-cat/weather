@@ -1,6 +1,6 @@
 import './assets/main.css'
 
 import { createApp } from 'vue'
-import Main from './Main.vue'
+import Weather from './Weather.vue'
 
-createApp(Main).mount('#app')
+createApp(Weather).mount('#app')
