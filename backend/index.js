@@ -40,7 +40,7 @@ async function init() {
 
   const storage = await UserStorage.makeStorage('./users.json')
 
-  console.log(storage.users)
+  console.log(storage._storage)
   
   app.use(express.static('../frontend/dist'))
   app.use(express.json())

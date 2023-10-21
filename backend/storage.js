@@ -23,23 +23,28 @@ function saltPassword(password) {
 
 class StorageError extends Error { }
 
-class UserStorage {
-  /**
-   * @private
-   */
+class Storage {
   constructor(filename) {
     /**
      * Имя файла, в котором хранятся данные о пользователях
      * @type {string}
      */
     this.filename = filename
-    /**
-     * Данные о пользователях
-     * @type {Record<string, User>}
-     */
-    this.users = {}
+
+    this._storage = {}
   }
 
+  /**
+   * Создаёт и возвращает новое хранилище
+   * @param {string} filename 
+   * @returns 
+   */
+  static async makeStorage(filename) {
+    const object = new UserStorage(filename)
+    await object._initialize()
+    return object
+  }
+  
   /**
    * Инициализирует хранилище
    * @private
@@ -54,7 +59,7 @@ class UserStorage {
     }
 
     const fileContents = await readFile(this.filename)
-    this.users = JSON.parse(fileContents.toString())
+    this._storage = JSON.parse(fileContents.toString())
   }
 
   /**
@@ -62,20 +67,39 @@ class UserStorage {
    */
   async _dumpToFile() {
     copyFile(this.filename, `${this.filename}.bak`)
-    await writeFile(this.filename, JSON.stringify(this.users))
+    await writeFile(this.filename, JSON.stringify(this._storage))
   }
 
   /**
-   * Создаёт и возвращает новое хранилище
-   * @param {string} filename 
-   * @returns 
+   * 
+   * @param {*} key 
+   * @returns {any}
    */
-  static async makeStorage(filename) {
-    const storage = new UserStorage(filename)
-    await storage._initialize()
-    return storage
+  get(key) {
+    return this._storage[key]
   }
 
+  /**
+   * 
+   * @param {string} key 
+   * @param {any} value 
+   * @returns {void}
+   */
+  set(key, value) {
+    this._storage[key] = value
+  }
+
+  /**
+   * 
+   * @param {string} key 
+   * @returns {boolean}
+   */
+  has(key) {
+    return Object.hasOwn(this._storage, key);
+  }
+}
+
+class UserStorage extends Storage {
   /**
    * Создаёт нового пользователя
    * @param {string} username 
@@ -83,7 +107,7 @@ class UserStorage {
    * @return {User}
    */
   async createUser(username, password) {
-    if (this.users[username]) {
+    if (this._storage[username]) {
       throw new StorageError(`Пользователь ${username} уже существует`)
     }
     const user = {
@@ -91,12 +115,13 @@ class UserStorage {
       saltedPassword: saltPassword(password),
       favoriteLocations: [],
     }
-    this.users[username] = user
+    this._storage[username] = user
 
     await this._dumpToFile()
 
     return user
   }
+  
   /**
    * Возвращает пользователя по валидной паре логин/пароль
    * @param {string} username 
@@ -104,7 +129,7 @@ class UserStorage {
    * @return {User}
    */
   async signIn(username, password) {
-    const user = this.users[username];
+    const user = this._storage[username];
     if (!user) {
       throw new StorageError(`Пользователь ${username} не найден`)
     }
