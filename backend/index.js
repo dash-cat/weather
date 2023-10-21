@@ -26,6 +26,15 @@ function makeRedirectResponse(route) {
   }
 }
 
+async function withErrorHandler(response, callback) {
+  try {
+    await callback()
+  } catch (error) {
+    response.statusCode = 400
+    response.send(makeErrorResponse(error))
+  }
+}
+
 async function init() {
   const app = express()
 
@@ -36,21 +45,20 @@ async function init() {
   app.use(express.static('../frontend/dist'))
   app.use(express.json())
   
-  app.post('/sign-in', async (request, response) => {
+  app.post('/sign-in', (request, response) => {
     const { body } = request
-    try {
-      const user = await storage.signIn(body.login, body.password)
+    withErrorHandler(response, async () => {
+      await storage.signIn(`${body.login}`, `${body.password}`)
       response.send(makeRedirectResponse('/'))
-    } catch (error) {
-      response.statusCode = 400
-      response.send(makeErrorResponse(error))
-    }
+    })
   })
 
   app.post('/sign-up', async (request, response) => {
     const { body } = request
-    await storage.createUser(`${body.login}`, `${body.password}`)
-    response.send('wow')
+    withErrorHandler(response, async () => {
+      await storage.createUser(`${body.login}`, `${body.password}`)
+      response.send(makeRedirectResponse('/'))
+    })
   })
 
   

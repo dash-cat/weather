@@ -83,6 +83,9 @@ class UserStorage {
    * @return {User}
    */
   async createUser(username, password) {
+    if (this.users[username]) {
+      throw new StorageError(`Пользователь ${username} уже существует`)
+    }
     const user = {
       username,
       saltedPassword: saltPassword(password),
@@ -103,7 +106,7 @@ class UserStorage {
   async signIn(username, password) {
     const user = this.users[username];
     if (!user) {
-      throw new StorageError(`Пользователь не найден: ${username}`)
+      throw new StorageError(`Пользователь ${username} не найден`)
     }
 
     if (user.saltedPassword === saltPassword(password)) {
