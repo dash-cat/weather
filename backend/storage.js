@@ -1,6 +1,14 @@
 const { stat, writeFile, readFile } = require('fs/promises')
 
 /**
+ * Возвращает посоленный пароль
+ * @param {string} password
+ */
+function saltPassword(password) {
+  return password
+}
+
+/**
  * @typedef {Object} User
  * @property {string} username
  * @property {string} saltedPassword
@@ -25,17 +33,6 @@ class UserStorage {
   }
 
   /**
-   * Создаёт и возвращает новое хранилище
-   * @param {string} filename 
-   * @returns 
-   */
-  static async makeStorage(filename) {
-    const storage = new UserStorage(filename)
-    await storage._initialize()
-    return storage
-  }
-
-  /**
    * Инициализирует хранилище
    * @private
    */
@@ -50,6 +47,43 @@ class UserStorage {
 
     const fileContents = await readFile(this.filename)
     this.users = JSON.parse(fileContents.toString())
+  }
+
+  /**
+   * Сохраняет содержимое хранилища в файл
+   */
+  async _dumpToFile() {
+    await writeFile(this.filename, JSON.stringify(this.users))
+  }
+
+  /**
+   * Создаёт и возвращает новое хранилище
+   * @param {string} filename 
+   * @returns 
+   */
+  static async makeStorage(filename) {
+    const storage = new UserStorage(filename)
+    await storage._initialize()
+    return storage
+  }
+
+  /**
+   * Создаёт нового пользователя
+   * @param {string} username 
+   * @param {string} password 
+   * @return {User}
+   */
+  async createUser(username, password) {
+    const user = {
+      username,
+      saltedPassword: saltPassword(password),
+      favoriteLocations: [],
+    }
+    this.users[username] = user
+
+    await this._dumpToFile()
+
+    return user
   }
 }
 

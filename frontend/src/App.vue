@@ -14,10 +14,10 @@
     </div>
     <div>
       <label for="login">Пароль</label>
-      <input id="password" type="password">
+      <input id="password" type="password" v-model="password">
     </div>
     <div>
-      <input id="create-new-user" type="checkbox">
+      <input id="create-new-user" type="checkbox" v-model="checkbox">
       <label for="create-new-user">Создать нового пользователя</label>
     </div>
     <button @click="onClick">Войти</button>

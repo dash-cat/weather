@@ -14,9 +14,15 @@ async function init() {
   app.use(express.json())
   
   app.post('/sign-in', (request, response) => {
-    console.log(request.body)
+    // ...
+  })
+
+  app.post('/sign-up', async (request, response) => {
+    const { body } = request
+    await storage.createUser(`${body.login}`, `${body.password}`)
     response.send('wow')
   })
+
   
   app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
