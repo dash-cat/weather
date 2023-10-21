@@ -1,5 +1,6 @@
+//@ts-check
 const { stat, writeFile, readFile, copyFile } = require('fs/promises')
-const { Hash, randomBytes } = require('crypto')
+const { createHash, randomBytes } = require('crypto')
 const { salt } = require('./secret.json')
 
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000
@@ -23,8 +24,7 @@ const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000
  * @param {string} password
  */
 function saltPassword(password) {
-  /** @type {Hash} */
-  const hash = new Hash('sha256')
+  const hash = createHash('sha256')
   hash.update(password)
   hash.update(salt)
   return hash.digest().toString('base64')
@@ -52,7 +52,6 @@ class Storage {
 
   /**
    * Инициализирует хранилище
-   * @private
    */
   async _initialize() {
     try {
@@ -191,7 +190,7 @@ class SessionStorage extends Storage {
   /**
    * 
    * @param {string} token 
-   * @returns {User}
+   * @returns {Promise<User>}
    */
   async getUserByToken(token) {
     /** @type {Session} */
@@ -200,15 +199,15 @@ class SessionStorage extends Storage {
       throw new StorageError(`Невалидный токен`)
     }
 
-    return this.userStorage.getUserByName()
+    return this.userStorage.getUserByName(session.username)
   }
 }
 
 /**
  * Создаёт и возвращает новое хранилище
- * @param {typeof Storage} theClass
+ * @param {any} theClass
  * @param {any[]} params 
- * @returns {Promise<Storage>}
+ * @returns {Promise<any>}
  */
 async function makeStorage(theClass, ...params) {
   const object = new theClass(...params)

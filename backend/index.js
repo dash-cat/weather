@@ -1,3 +1,4 @@
+//@ts-check
 const express = require('express')
 const { UserStorage, SessionStorage, makeStorage } = require('./storage')
 
@@ -43,8 +44,6 @@ async function init() {
   const userStorage = await makeStorage(UserStorage, './users.json')
   /** @type {SessionStorage} */
   const sessionStorage = await makeStorage(SessionStorage, './sessions.json', userStorage)
-
-  console.log(userStorage._storage)
   
   app.use(express.static('../frontend/dist'))
   app.use(express.json())
