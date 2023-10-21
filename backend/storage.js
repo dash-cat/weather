@@ -1,11 +1,17 @@
 const { stat, writeFile, readFile } = require('fs/promises')
+const { Hash } = require('crypto')
+const { salt } = require('./secret.json')
 
 /**
  * Возвращает посоленный пароль
  * @param {string} password
  */
 function saltPassword(password) {
-  return password
+  /** @type {Hash} */
+  const hash = new Hash('sha256')
+  hash.update(password)
+  hash.update(salt)
+  return hash.digest().toString('base64')
 }
 
 /**
