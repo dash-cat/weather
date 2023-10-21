@@ -1,8 +1,25 @@
 //@ts-check
 const express = require('express')
+const cookieParser = require('cookie-parser')
+const { get } = require('https')
 const { UserStorage, SessionStorage, makeStorage } = require('./storage')
+const { openWeatherKey } = require('./secret.json')
 
 const port = 3000
+
+/**
+ * @template T
+ * @param {T[]} items 
+ * @param {number} times 
+ * @returns {T[]}
+ */
+function multiplyArray(items, times) {
+  let result = []
+  for (let i = 0; i < times; i++) {
+    result = result.concat(items)
+  }
+  return result
+}
 
 /**
  * 
@@ -27,6 +44,18 @@ function makeRedirectResponse(route) {
   }
 }
 
+/**
+ * 
+ * @param {Object} payload 
+ * @returns 
+ */
+function makeSuccessResponse(payload) {
+  return {
+    type: 'success',
+    payload
+  }
+}
+
 async function withErrorHandler(response, callback) {
   try {
     await callback()
@@ -37,14 +66,41 @@ async function withErrorHandler(response, callback) {
   }
 }
 
+/**
+ * @param {string} url
+ * @param {RequestInit} options
+ * @returns {Promise<Object>}
+ */
+async function fetchJSON(url, options) {
+  const response = await fetch(url, options)
+  return response.json()
+}
+
 async function init() {
-  const app = express()
 
   /** @type {UserStorage} */
   const userStorage = await makeStorage(UserStorage, './users.json')
   /** @type {SessionStorage} */
   const sessionStorage = await makeStorage(SessionStorage, './sessions.json', userStorage)
-  
+
+  /**
+   * 
+   * @param {import('express').Request} request 
+   * @param {import('express').Response} response 
+   * @param {import('express').NextFunction} next 
+   */
+  function checkTokenMiddleware(request, response, next) {
+    const user = sessionStorage.getUserByToken(request.cookies['Token'])
+    response.locals.user = user
+    next()
+  }
+
+  const parseCookiesMiddleware = cookieParser()
+
+  const middlewares = [parseCookiesMiddleware, checkTokenMiddleware]
+
+  const app = express()
+
   app.use(express.static('../frontend/dist'))
   app.use(express.json())
   
@@ -68,6 +124,17 @@ async function init() {
     })
   })
 
+  app.get('/weather', ...middlewares, async (request, response) => {
+    const city = encodeURIComponent(`${request.query['city']}`)
+    const url = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&appid=${openWeatherKey}`
+    const citiesResponse = await fetchJSON(url, {})
+    const { lon, lat } = citiesResponse[0]
+    const daysCount = 10
+    const url2 = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${openWeatherKey}`
+    console.log(url2)
+    const weatherResponse = await fetchJSON(url2, {})
+    response.send(makeSuccessResponse(multiplyArray([weatherResponse], 10)))
+  })
   
   app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
