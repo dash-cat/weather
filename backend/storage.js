@@ -1,4 +1,4 @@
-const { stat, writeFile, readFile } = require('fs/promises')
+const { stat, writeFile, readFile, copyFile } = require('fs/promises')
 const { Hash } = require('crypto')
 const { salt } = require('./secret.json')
 
@@ -61,6 +61,7 @@ class UserStorage {
    * Сохраняет содержимое хранилища в файл
    */
   async _dumpToFile() {
+    copyFile(this.filename, `${this.filename}.bak`)
     await writeFile(this.filename, JSON.stringify(this.users))
   }
 
