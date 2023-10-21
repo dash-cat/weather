@@ -3,6 +3,13 @@ const { Hash } = require('crypto')
 const { salt } = require('./secret.json')
 
 /**
+ * @typedef {Object} User
+ * @property {string} username
+ * @property {string} saltedPassword
+ * @property {string[]} favoriteLocations
+ */
+
+/**
  * Возвращает посоленный пароль
  * @param {string} password
  */
@@ -14,12 +21,7 @@ function saltPassword(password) {
   return hash.digest().toString('base64')
 }
 
-/**
- * @typedef {Object} User
- * @property {string} username
- * @property {string} saltedPassword
- * @property {string[]} favoriteLocations
- */
+class StorageError extends Error { }
 
 class UserStorage {
   /**
@@ -91,6 +93,27 @@ class UserStorage {
 
     return user
   }
+  /**
+   * Возвращает пользователя по валидной паре логин/пароль
+   * @param {string} username 
+   * @param {string} password 
+   * @return {User}
+   */
+  async signIn(username, password) {
+    const user = this.users[username];
+    if (!user) {
+      throw new StorageError(`Пользователь не найден: ${username}`)
+    }
+
+    if (user.saltedPassword === saltPassword(password)) {
+      return user
+    }
+
+    throw new StorageError(`Неверный пароль`)
+  }
 }
 
-module.exports = UserStorage
+module.exports = {
+  UserStorage,
+  StorageError,
+}
