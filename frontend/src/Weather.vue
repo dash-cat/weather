@@ -125,6 +125,8 @@ onMounted(async() => {
   justify-content: space-evenly;
   margin: 30px;
   color: black;
+  margin-right: 81px;
+  gap:5px
 }
 
 .search {
@@ -137,7 +139,7 @@ onMounted(async() => {
   width: 100%;
   height: 170px;
   border: 1px solid gray;
-  background: rgb(177 222 231 / 56%);
+  background: rgb(177 222 231 / 70%);
   border-radius: 6px;
   font-size: 12px;
 }
