@@ -9,6 +9,7 @@ export default defineConfig({
     vue(),
   ],
   build: {
+    sourcemap: true,
     rollupOptions: {
       input: {
         login: './login.html',

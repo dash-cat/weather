@@ -17,6 +17,7 @@ const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000
  * @property {string} username
  * @property {string} token
  * @property {number} created
+ * @property {number} requestCount
  */
 
 /**
@@ -181,7 +182,8 @@ class SessionStorage extends Storage {
     const session = {
       username,
       token,
-      created: Date.now()
+      created: Date.now(),
+      requestCount: 0,
     }
     await this.set(token, session)
     return session
