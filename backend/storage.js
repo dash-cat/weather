@@ -59,7 +59,7 @@ class Storage {
       await stat(this.filename)
     } catch (error) {
       if (error.code === 'ENOENT') {
-        writeFile(this.filename, '{}')
+        await writeFile(this.filename, '{}')
       }
     }
 
