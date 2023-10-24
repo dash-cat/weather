@@ -6,13 +6,13 @@
   <div :style="{'background-image': `url(${backgroundImage})`}" class="container">
     <div class="forecast" v-for="city in cities">
       <div class="favorite">
-        <Button @click="addToFavorites(city.name)" :msg="'Добавить в избранное'"></Button>
-        <Button @click="deleteCity(city.name)" :msg="'Удалить из избранного'"></Button>
+        <Button v-show="!isFavorite(city.name)" @click="addToFavorites(city.name)" :msg="'Добавить в избранное'"></Button>
+        <Button v-show="isFavorite(city.name)" @click="deleteCity(city.name)" :msg="'Удалить из избранного'"></Button>
         <Button @click="city.weather = showForecast(city.weather)" :msg="'Прогноз погоды на 5 дней'"></Button>
       </div>
       <div class="item" v-for="item in city.weather">
         <div class="city">{{ item.name }}</div>
-        <div class="date">{{ new Date().toLocaleString("en-US", { hour12: false }) }}</div>
+        <div class="date">{{ new Date().getMonth() + 1 }}/{{ new Date().getDate() }}</div>
         <div>
           <div>
             <span>Температура: </span>{{ item.main.temp }} °C
@@ -55,6 +55,17 @@ function showForecast(weather) {
   return weather.slice(0, 5)
 }
 
+function isFavorite(city) {
+  let isHasValue = false
+  const allFavoriteCities = JSON.parse(localStorage.getItem("favoriteCities") || '[]')
+  for (let i = 0; i < allFavoriteCities.length; i++) {
+    if (allFavoriteCities[i] === city) {
+      isHasValue = true
+    }
+  }
+  return isHasValue
+}
+
 function addToFavorites(city) {
   const favoriteCities = localStorage.getItem("favoriteCities")
   if (!history) {
@@ -92,15 +103,9 @@ async function sendCity(city) {
   try {
     const weather = await getForecastForCity(city)
     cities.value.push({name: city, weather})
-    // document.cookie = JSON.stringify(counter++) 
-    // alert(document.cookie)
-    // console.log(weather)
   } catch (error) {
     alert('Город не найден')
   }
-
-  
-  
 }
 
 function getCityOfLocalStorage() {
@@ -118,9 +123,10 @@ onMounted(async() => {
 </script>
 
 <script>
-const keyPictures = '99bXOB5nLWQAFrPdJMHIa0cAESPAS82kzxFWus6fFZU'
+const KEY_PICTURES = '99bXOB5nLWQAFrPdJMHIa0cAESPAS82kzxFWus6fFZU'
+
 export async function getPictures() {
-  const pict = await(await fetch(`https://api.unsplash.com/photos/random?client_id=${keyPictures}`))
+  const pict = await(await fetch(`https://api.unsplash.com/photos/random?client_id=${KEY_PICTURES}`))
     .json()
   return pict.urls.full
 

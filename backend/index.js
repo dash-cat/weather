@@ -4,7 +4,8 @@ const cookieParser = require('cookie-parser')
 const { UserStorage, SessionStorage, makeStorage } = require('./storage')
 const { openWeatherKey } = require('./secret.json')
 
-const port = 3000
+const PORT = 3000
+const RATE_LIMIT = 15
 
 /**
  * @template T
@@ -138,7 +139,7 @@ async function init() {
       if (user) {
         sendData(request, response)
       } else {
-        if (request.cookies.Counter % 5 === 0 && !user) {
+        if (request.cookies.Counter % RATE_LIMIT === 0 && !user) {
           response.send(makeRedirectResponse('/login.html'))
           return;
         } else {
@@ -160,8 +161,8 @@ async function init() {
     response.send(makeSuccessResponse(multiplyArray([weatherResponse], daysCount)))
   }
   
-  app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
+  app.listen(PORT, () => {
+    console.log(`Example app listening on port ${PORT}`)
   })
 }
 
