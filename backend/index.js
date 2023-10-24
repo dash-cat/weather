@@ -135,31 +135,30 @@ async function init() {
       } catch {
         user = undefined
       }
-      
-      if (user) {
-        sendData(request, response)
-      } else {
+  
         if (request.cookies.Counter % RATE_LIMIT === 0 && !user) {
           response.send(makeRedirectResponse('/login.html'))
           return;
         } else {
-          sendData(request, response)
+          const city = encodeURIComponent(`${request.query['city']}`)
+          const url = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&appid=${openWeatherKey}`
+          
+          try {
+            const citiesResponse = await fetchJSON(url, {})
+            if (!citiesResponse.length) return response.send(makeErrorResponse(new Error('Город не найден')))
+            const { lon, lat } = citiesResponse[0]
+            const daysCount = 10
+            const url2 = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${openWeatherKey}&lang=ru&units=metric`
+            const weatherResponse = await fetchJSON(url2, {})
+            response.send(makeSuccessResponse(multiplyArray([weatherResponse], daysCount)))
+          } catch (e){
+            console.log(e)
+          }
         }
-      }
     })
   })
 
-  async function sendData(request, response) {
-    const city = encodeURIComponent(`${request.query['city']}`)
-    const url = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&appid=${openWeatherKey}`
-    const citiesResponse = await fetchJSON(url, {})
-    if (!citiesResponse.length) return response.send(makeErrorResponse(new Error('Город не найден')))
-    const { lon, lat } = citiesResponse[0]
-    const daysCount = 10
-    const url2 = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${openWeatherKey}&lang=ru&units=metric`
-    const weatherResponse = await fetchJSON(url2, {})
-    response.send(makeSuccessResponse(multiplyArray([weatherResponse], daysCount)))
-  }
+
   
   app.listen(PORT, () => {
     console.log(`Example app listening on port ${PORT}`)

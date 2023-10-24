@@ -1,5 +1,8 @@
 <template>
-  <div>
+  <div class="auth">
+    <a href="/login.html">Войти</a>
+  </div>
+  <div class="search-container">
     <input
       v-model="search" class='search' placeholder="Введите город" @change="sendCity(search)">
   </div>
@@ -33,7 +36,7 @@
 //@ts-check
 import { getForecastForCity } from './api'
 import Button from './components/Button.vue'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick} from 'vue'
 
 
 /** @type {import('vue').Ref<any>} */
@@ -46,9 +49,10 @@ const backgroundImage = ref('')
 
 
 {
-  (async () => {
+  setTimeout(() => (async () => {
     cities.value.push({name: 'Novosibirsk', weather: await getForecastForCity('Novosibirsk')})
-  })()
+  })(), 100)
+  
 }
 
 function showForecast(weather) {
@@ -78,7 +82,6 @@ function addToFavorites(city) {
     } else {
       historyViews.push(city)
       localStorage.setItem("favoriteCities", JSON.stringify(historyViews));
-      console.log('historyViews', historyViews);
     }
   }
 }
@@ -100,6 +103,7 @@ function deleteCity(city) {
  * @returns {Promise<Object>}
  */
 async function sendCity(city) {
+  if (!city.length) return
   try {
     const weather = await getForecastForCity(city)
     cities.value.push({name: city, weather})
@@ -134,9 +138,28 @@ export async function getPictures() {
 </script>
 
 <style scoped>
+.auth {
+  position: absolute;
+  width: 150px;
+  height: 60px;
+  background: aqua;
+  color: #000;
+  border-radius: 15px;
+  text-align: center;
+  z-index: 1;
+  right: 0;
+  cursor: pointer;
+  margin: 5px;
+}
+
+a {
+  text-decoration: none;
+  color: white;
+  transition: .4s;
+  font-size: 30px;
+}
 .forecast{
   display: flex;
-  justify-content: space-evenly;
   margin: 30px;
   color: black;
   margin-right: 81px;
@@ -145,9 +168,10 @@ export async function getPictures() {
 
 .search {
   width: 232px;
-  position: absolute;
+  position: fixed;
   bottom: 40px;
-  right: 33%;
+  right: 35%;
+  text-align: center;
 }
 .item {
   width: 100%;
@@ -156,6 +180,9 @@ export async function getPictures() {
   background: rgb(177 222 231 / 70%);
   border-radius: 6px;
   font-size: 12px;
+}
+.search-container {
+  display: flex;
 }
 
 .city {
