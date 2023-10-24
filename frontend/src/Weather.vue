@@ -40,7 +40,6 @@ import { ref, onMounted } from 'vue'
 const cities = ref([])
 const search = ref('')
 const backgroundImage = ref('')
-const keyPictures = '99bXOB5nLWQAFrPdJMHIa0cAESPAS82kzxFWus6fFZU'
 
 
 {
@@ -86,21 +85,15 @@ async function sendCity(city) {
   try {
     const weather = await getForecastForCity(city)
     cities.value.push({name: city, weather})
-    console.log(weather)
+    // document.cookie = JSON.stringify(counter++) 
+    // alert(document.cookie)
+    // console.log(weather)
   } catch (error) {
     alert('Город не найден')
   }
 
   
   
-}
-
-
-async function getPictures() {
-  const pict = await(await fetch(`https://api.unsplash.com/photos/random?client_id=${keyPictures}`))
-    .json()
-  return pict.urls.full
-
 }
 
 function getCityOfLocalStorage() {
@@ -111,12 +104,20 @@ function getCityOfLocalStorage() {
 }
 
 onMounted(async() => {
-  const pict = await getPictures()
-  console.log('pict',pict)
-  backgroundImage.value = pict
+  backgroundImage.value = await getPictures()
   getCityOfLocalStorage()
 })
 
+</script>
+
+<script>
+const keyPictures = '99bXOB5nLWQAFrPdJMHIa0cAESPAS82kzxFWus6fFZU'
+export async function getPictures() {
+  const pict = await(await fetch(`https://api.unsplash.com/photos/random?client_id=${keyPictures}`))
+    .json()
+  return pict.urls.full
+
+}
 </script>
 
 <style scoped>
@@ -147,11 +148,5 @@ onMounted(async() => {
 .city {
   font-weight: 500;
   font-size: 15px;
-}
-
-.container {
-  height: 100vh;
-  width: 100vw;
-  background-size: cover;
 }
 </style>

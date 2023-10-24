@@ -123,16 +123,25 @@ async function init() {
     })
   })
 
+  let counter = 0
+
   app.get('/weather', ...middlewares, async (request, response) => {
+    console.log('Request', request.cookies)
+    // console.log('response', response)
+    response.cookie('Counter',`${counter += 1}`)
+    const user = await sessionStorage.getUserByToken(request.cookies['Token'])
+    console.log('USER', user)
+    if (request.cookies.Counter % 3 === 0 && !user) {
+      response.send(makeRedirectResponse('/login.html'))
+      return;
+    }
     const city = encodeURIComponent(`${request.query['city']}`)
     const url = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&appid=${openWeatherKey}`
     const citiesResponse = await fetchJSON(url, {})
-    console.log(citiesResponse)
     if (!citiesResponse.length) return response.send(makeErrorResponse(new Error('Город не найден')))
     const { lon, lat } = citiesResponse[0]
     const daysCount = 10
     const url2 = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${openWeatherKey}&lang=ru&units=metric`
-    console.log(url2)
     const weatherResponse = await fetchJSON(url2, {})
     response.send(makeSuccessResponse(multiplyArray([weatherResponse], daysCount)))
   })
