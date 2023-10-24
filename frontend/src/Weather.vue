@@ -8,9 +8,11 @@
       <div class="favorite">
         <button @click="addToFavorites(city.name)">Добавить в избранное</button>
         <button @click="deleteCity(city.name)">Удалить из избранного</button>
+        <button @click="city.weather = showForecast(city.weather)">Прогноз погоды на 5 дней</button>
       </div>
       <div class="item" v-for="item in city.weather">
         <div class="city">{{ item.name }}</div>
+        <div class="date">{{ new Date().toISOString() }}</div>
         <div>
           <div>
             <span>Температура: </span>{{ item.main.temp }} °C
@@ -46,6 +48,10 @@ const backgroundImage = ref('')
   (async () => {
     cities.value.push({name: 'Novosibirsk', weather: await getForecastForCity('Novosibirsk')})
   })()
+}
+
+function showForecast(weather) {
+  return weather.slice(0, 5)
 }
 
 function addToFavorites(city) {
