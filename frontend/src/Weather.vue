@@ -6,13 +6,13 @@
   <div :style="{'background-image': `url(${backgroundImage})`}" class="container">
     <div class="forecast" v-for="city in cities">
       <div class="favorite">
-        <button @click="addToFavorites(city.name)">Добавить в избранное</button>
-        <button @click="deleteCity(city.name)">Удалить из избранного</button>
-        <button @click="city.weather = showForecast(city.weather)">Прогноз погоды на 5 дней</button>
+        <Button @click="addToFavorites(city.name)" :msg="'Добавить в избранное'"></Button>
+        <Button @click="deleteCity(city.name)" :msg="'Удалить из избранного'"></Button>
+        <Button @click="city.weather = showForecast(city.weather)" :msg="'Прогноз погоды на 5 дней'"></Button>
       </div>
       <div class="item" v-for="item in city.weather">
         <div class="city">{{ item.name }}</div>
-        <div class="date">{{ new Date().toISOString() }}</div>
+        <div class="date">{{ new Date().toLocaleString("en-US", { hour12: false }) }}</div>
         <div>
           <div>
             <span>Температура: </span>{{ item.main.temp }} °C
@@ -32,6 +32,7 @@
 <script setup>
 //@ts-check
 import { getForecastForCity } from './api'
+import Button from './components/Button.vue'
 import { ref, onMounted } from 'vue'
 
 

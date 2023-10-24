@@ -89,9 +89,11 @@ async function init() {
    * @param {import('express').NextFunction} next 
    */
   function checkTokenMiddleware(request, response, next) {
-    const user = sessionStorage.getUserByToken(request.cookies['Token'])
-    response.locals.user = user
-    next()
+    withErrorHandler(response, async () => {
+      const user = await sessionStorage.getUserByToken(request.cookies['Token'])
+      response.locals.user = user
+      next()
+    })
   }
 
   const parseCookiesMiddleware = cookieParser()
@@ -123,18 +125,30 @@ async function init() {
     })
   })
 
-  let counter = 0
+  app.get('/weather', parseCookiesMiddleware, async (request, response) => {
+    response.cookie('Counter',`${Number(request.cookies.Counter || 0) + 1}`)
+    withErrorHandler(response, async () => {
+      let user
+      try {
+        user = await sessionStorage.getUserByToken(request.cookies['Token'])
+      } catch {
+        user = undefined
+      }
+      
+      if (user) {
+        sendData(request, response)
+      } else {
+        if (request.cookies.Counter % 5 === 0 && !user) {
+          response.send(makeRedirectResponse('/login.html'))
+          return;
+        } else {
+          sendData(request, response)
+        }
+      }
+    })
+  })
 
-  app.get('/weather', ...middlewares, async (request, response) => {
-    console.log('Request', request.cookies)
-    // console.log('response', response)
-    response.cookie('Counter',`${counter += 1}`)
-    const user = await sessionStorage.getUserByToken(request.cookies['Token'])
-    console.log('USER', user)
-    if (request.cookies.Counter % 3 === 0 && !user) {
-      response.send(makeRedirectResponse('/login.html'))
-      return;
-    }
+  async function sendData(request, response) {
     const city = encodeURIComponent(`${request.query['city']}`)
     const url = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&appid=${openWeatherKey}`
     const citiesResponse = await fetchJSON(url, {})
@@ -144,7 +158,7 @@ async function init() {
     const url2 = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${openWeatherKey}&lang=ru&units=metric`
     const weatherResponse = await fetchJSON(url2, {})
     response.send(makeSuccessResponse(multiplyArray([weatherResponse], daysCount)))
-  })
+  }
   
   app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
