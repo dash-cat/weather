@@ -2,33 +2,8 @@
   <div class="auth">
     <a href="/login.html">Войти</a>
   </div>
-  <div class="search-container">
-    <input
-      v-model="search" class='search' placeholder="Введите город" @change="sendCity(search)">
-  </div>
-  <div :style="{'background-image': `url(${backgroundImage})`}" class="container">
-    <div class="forecast" v-for="city in cities">
-      <div class="favorite">
-        <Button v-show="!isFavorite(city.name)" @click="addToFavorites(city.name)" :msg="'Добавить в избранное'"></Button>
-        <Button v-show="isFavorite(city.name)" @click="deleteCity(city.name)" :msg="'Удалить из избранного'"></Button>
-        <Button @click="city.weather = showForecast(city.weather)" :msg="'Прогноз погоды на 5 дней'"></Button>
-      </div>
-      <div class="item" v-for="item in city.weather">
-        <div class="city">{{ item.name }}</div>
-        <div class="date">{{ new Date().getMonth() + 1 }}/{{ new Date().getDate() }}</div>
-        <div>
-          <div>
-            <span>Температура: </span>{{ item.main.temp }} °C
-          </div>
-          <div>
-            <div>
-              <span>Скорость ветра: </span>{{ item.wind.speed }} м/с
-            </div>
-            <div>{{ item.weather[0].description }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div>
+    
   </div>
 </template>
 

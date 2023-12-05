@@ -26,7 +26,7 @@
 
 <script setup>
 
-import { ref, reactive, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { signIn } from './api'
 import { getPictures } from './Weather.vue'
 
@@ -34,7 +34,6 @@ const login = ref('')
 const password = ref('')
 const checkbox = ref(false)
 const backgroundImage = ref('')
-const description = 'После бесплатной успешной регистрации, вам будет доступен неограниченный доступ к приложению ***'
 
 function onClick() {
   signIn(login.value, password.value, checkbox.value)
