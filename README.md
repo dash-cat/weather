@@ -27,3 +27,7 @@ npm run lint
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
+
+    docker run -e POSTGRES_PASSWORD=123 -p 5000:5432 postgres
+
+    npx prisma migrate dev --name init

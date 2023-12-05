@@ -1,9 +1,9 @@
 <template>
   <div
     class="container_template"
-    :style="{ backgroundImage: `url(${dish.image})` }"
+    :style="{ backgroundImage: `url(${props.allDish.dish.image})` }"
   >
-    <div class="container_template_view" v-for="dish in allDish" :key="dish.id">
+    <div class="container_template_view" v-for="dish in props.allDish" :key="dish.id">
       <h3>{{ dish.name }}</h3>
       <div class="container_template_view_description">
         <span>{{ dish.compound }}</span
@@ -14,6 +14,9 @@
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+const props = defineProps(['props'])
+</script>
 
-<style lang="scss"></style>
+<style lang="scss">
+</style>

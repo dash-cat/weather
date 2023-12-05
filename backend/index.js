@@ -1,25 +1,11 @@
 //@ts-check
 const express = require('express')
 const cookieParser = require('cookie-parser')
-const { UserStorage, SessionStorage, makeStorage } = require('./storage')
-const { openWeatherKey } = require('./secret.json')
+const { UserStorage, SessionStorage } = require('./storage')
+const { PrismaClient } = require('@prisma/client')
 
 const PORT = 3000
 const RATE_LIMIT = 15
-
-/**
- * @template T
- * @param {T[]} items 
- * @param {number} times 
- * @returns {T[]}
- */
-function multiplyArray(items, times) {
-  let result = []
-  for (let i = 0; i < times; i++) {
-    result = result.concat(items)
-  }
-  return result
-}
 
 /**
  * 
@@ -44,17 +30,6 @@ function makeRedirectResponse(route) {
   }
 }
 
-/**
- * 
- * @param {Object} payload 
- * @returns 
- */
-function makeSuccessResponse(payload) {
-  return {
-    type: 'success',
-    payload
-  }
-}
 
 async function withErrorHandler(response, callback) {
   try {
@@ -66,22 +41,13 @@ async function withErrorHandler(response, callback) {
   }
 }
 
-/**
- * @param {string} url
- * @param {RequestInit} options
- * @returns {Promise<Object>}
- */
-async function fetchJSON(url, options) {
-  const response = await fetch(url, options)
-  return response.json()
-}
-
 async function init() {
 
+  const prisma = new PrismaClient()
   /** @type {UserStorage} */
-  const userStorage = await makeStorage(UserStorage, './users.json')
+  const userStorage = new UserStorage(prisma)
   /** @type {SessionStorage} */
-  const sessionStorage = await makeStorage(SessionStorage, './sessions.json', userStorage)
+  const sessionStorage = new SessionStorage(prisma, userStorage)
 
   /**
    * 
@@ -110,7 +76,7 @@ async function init() {
     const { body } = request
     withErrorHandler(response, async () => {
       const user = await userStorage.signIn(`${body.login}`, `${body.password}`)
-      const session = await sessionStorage.createSession(user.username)
+      const session = await sessionStorage.createSession(user.login)
       response.cookie('Token', session.token)
       response.send(makeRedirectResponse('/'))
     })
@@ -120,46 +86,12 @@ async function init() {
     const { body } = request
     withErrorHandler(response, async () => {
       const user = await userStorage.createUser(`${body.login}`, `${body.password}`)
-      const session = await sessionStorage.createSession(user.username)
+      const session = await sessionStorage.createSession(user.login)
       response.cookie('Token', session.token)
       response.send(makeRedirectResponse('/'))
     })
   })
 
-  app.get('/weather', parseCookiesMiddleware, async (request, response) => {
-    response.cookie('Counter',`${Number(request.cookies.Counter || 0) + 1}`)
-    withErrorHandler(response, async () => {
-      let user
-      try {
-        user = await sessionStorage.getUserByToken(request.cookies['Token'])
-      } catch {
-        user = undefined
-      }
-  
-        if (request.cookies.Counter % RATE_LIMIT === 0 && !user) {
-          response.send(makeRedirectResponse('/login.html'))
-          return;
-        } else {
-          const city = encodeURIComponent(`${request.query['city']}`)
-          const url = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&appid=${openWeatherKey}`
-          
-          try {
-            const citiesResponse = await fetchJSON(url, {})
-            if (!citiesResponse.length) return response.send(makeErrorResponse(new Error('Город не найден')))
-            const { lon, lat } = citiesResponse[0]
-            const daysCount = 10
-            const url2 = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${openWeatherKey}&lang=ru&units=metric`
-            const weatherResponse = await fetchJSON(url2, {})
-            response.send(makeSuccessResponse(multiplyArray([weatherResponse], daysCount)))
-          } catch (e){
-            console.log(e)
-          }
-        }
-    })
-  })
-
-
-  
   app.listen(PORT, () => {
     console.log(`Example app listening on port ${PORT}`)
   })

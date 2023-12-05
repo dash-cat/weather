@@ -1,23 +1,23 @@
 //@ts-check
-const { stat, writeFile, readFile, copyFile } = require('fs/promises')
-const { createHash, randomBytes } = require('crypto')
-const { salt } = require('./secret.json')
+const { stat, writeFile, readFile, copyFile } = require("fs/promises");
+const { createHash, randomBytes } = require("crypto");
+const { salt } = require("./secret.json");
+const { PrismaClient } = require("@prisma/client");
 
-const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000
+const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * @typedef {Object} User
- * @property {string} username
+ * @property {number} id
+ * @property {string} login
  * @property {string} saltedPassword
- * @property {string[]} favoriteLocations
  */
 
 /**
  * @typedef {Object} Session
  * @property {string} username
  * @property {string} token
- * @property {number} created
- * @property {number} requestCount
+ * @property {Date} created
  */
 
 /**
@@ -25,202 +25,149 @@ const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000
  * @param {string} password
  */
 function saltPassword(password) {
-  const hash = createHash('sha256')
-  hash.update(password)
-  hash.update(salt)
-  return hash.digest().toString('base64')
+  const hash = createHash("sha256");
+  hash.update(password);
+  hash.update(salt);
+  return hash.digest().toString("base64");
 }
 
 /**
  * @returns {string}
  */
 function generateToken() {
-  return randomBytes(16).toString('hex')
+  return randomBytes(16).toString("hex");
 }
 
-class StorageError extends Error { }
+class StorageError extends Error {}
 
 class Storage {
-  constructor(filename) {
-    /**
-     * Имя файла, в котором хранятся данные о пользователях
-     * @type {string}
-     */
-    this.filename = filename
-
-    this._storage = {}
-  }
-
   /**
-   * Инициализирует хранилище
+   *
+   * @param {PrismaClient} client
    */
-  async _initialize() {
-    try {
-      await stat(this.filename)
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        await writeFile(this.filename, '{}')
-      }
-    }
-
-    const fileContents = await readFile(this.filename)
-    this._storage = JSON.parse(fileContents.toString())
-  }
-
-  /**
-   * Сохраняет содержимое хранилища в файл
-   */
-  async _dumpToFile() {
-    copyFile(this.filename, `${this.filename}.bak`)
-    await writeFile(this.filename, JSON.stringify(this._storage))
-  }
-
-  /**
-   * 
-   * @param {*} key 
-   * @returns {any}
-   */
-  get(key) {
-    return this._storage[key]
-  }
-
-  /**
-   * 
-   * @param {string} key 
-   * @param {any} value 
-   * @returns {Promise<void>}
-   */
-  async set(key, value) {
-    this._storage[key] = value
-    await this._dumpToFile()
-  }
-
-  /**
-   * 
-   * @param {string} key 
-   * @returns {boolean}
-   */
-  has(key) {
-    return Boolean(this._storage[key]);
+  constructor(client) {
+    /** @type {PrismaClient} */
+    this.client = client;
   }
 }
 
 class UserStorage extends Storage {
   /**
    * Создаёт нового пользователя
-   * @param {string} username 
-   * @param {string} password 
+   * @param {string} login
+   * @param {string} password
    * @return {Promise<User>}
    */
-  async createUser(username, password) {
-    if (this.has(username)) {
-      throw new StorageError(`Пользователь ${username} уже существует`)
-    }
-    const user = {
-      username,
-      saltedPassword: saltPassword(password),
-      favoriteLocations: [],
+  async createUser(login, password) {
+    if (
+      await this.client.user.findFirst({
+        where: { login },
+      })
+    ) {
+      throw new StorageError(`Пользователь ${login} уже существует`);
     }
 
-    await this.set(username, user)
-    return user
+    const user = await this.client.user.create({
+      data: {
+        login,
+        saltedPassword: saltPassword(password),
+      },
+    });
+
+    return user;
   }
 
   /**
-   * 
-   * @param {string} username 
-   * @returns {User}
+   *
+   * @param {string} login
+   * @returns {Promise<User>}
    */
-  getUserByName(username) {
-    const user = this.get(username)
+  async getUserByName(login) {
+    const user = await this.client.user.findFirst({
+      where: { login },
+    });
     if (!user) {
-      throw new StorageError(`Пользователь ${username} не найден`)
+      throw new StorageError(`Пользователь ${login} не найден`);
     }
-    return user
+    return user;
   }
 
   /**
    * Возвращает пользователя по валидной паре логин/пароль
-   * @param {string} username 
-   * @param {string} password 
+   * @param {string} username
+   * @param {string} password
    * @return {Promise<User>}
    */
   async signIn(username, password) {
-    const user = this.getUserByName(username)
+    const user = await this.getUserByName(username);
 
     if (user.saltedPassword === saltPassword(password)) {
-      return user
+      return user;
     }
 
-    throw new StorageError(`Неверный пароль`)
+    throw new StorageError(`Неверный пароль`);
   }
 }
 
 class SessionStorage extends Storage {
   /**
-   * 
-   * @param {string} filename 
-   * @param {UserStorage} userStorage 
+   *
+   * @param {PrismaClient} client
+   * @param {UserStorage} userStorage
    */
-  constructor(filename, userStorage) {
-    super(filename)
+  constructor(client, userStorage) {
+    super(client);
     /** @type {UserStorage} */
-    this.userStorage = userStorage
+    this.userStorage = userStorage;
   }
 
   /**
-   * 
+   *
    * @param {string} username
    * @returns {Promise<Session>}
    */
   async createSession(username) {
-    if (!this.userStorage.has(username)) {
-      throw new StorageError(`Не удалось создать сессию: пользователя ${username} не существует`)
+    const sessionUser = await this.client.session.findFirst({
+      where: { username },
+    });
+    if (!sessionUser) {
+      throw new StorageError(
+        `Не удалось создать сессию: пользователя ${username} не существует`
+      );
     }
 
-    const token = generateToken()
-    const session = {
-      username,
-      token,
-      created: Date.now(),
-      requestCount: 0,
-    }
-    await this.set(token, session)
-    return session
+    const token = generateToken();
+    const session = await this.client.session.create({
+      data: {
+        username,
+        token,
+        created: new Date(),
+      },
+    });
+    return session;
   }
 
   /**
-   * 
-   * @param {string} token 
+   *
+   * @param {string} token
    * @returns {Promise<User>}
    */
   async getUserByToken(token) {
-    /** @type {Session} */
-    const session = this.get(token)
+
+    const session = await this.client.session.findFirst({
+      where: { token },
+    });
+
     if (!session) {
-      throw new StorageError(`Невалидный токен`)
+      throw new StorageError(`Невалидный токен`);
     }
 
-    return this.userStorage.getUserByName(session.username)
+    return this.userStorage.getUserByName(session.username);
   }
 }
-
-/**
- * Создаёт и возвращает новое хранилище
- * @param {any} theClass
- * @param {any[]} params 
- * @returns {Promise<any>}
- */
-async function makeStorage(theClass, ...params) {
-  const object = new theClass(...params)
-  await object._initialize()
-  return object
-}
-  
 
 module.exports = {
   UserStorage,
   StorageError,
   SessionStorage,
-  makeStorage,
-}
+};

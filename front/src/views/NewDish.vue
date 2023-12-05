@@ -1,5 +1,6 @@
 <template>
   <div class="container">
+    <TemplateDish props="{{allDish}}"/>
     <div class="container_dish">
       <FormEl msg="Название блюда" v-model="textName" />
       <FormEl msg="Состав" area="true" v-model="textCompound" />
@@ -24,6 +25,7 @@
 import ImageUpload from "../components/UI/input/ImageUpload.vue";
 import Button from "../components/UI/button/ButtonElement.vue";
 import FormEl from "../components/UI/forms/FormEl.vue";
+import TemplateDish from '../components/TemplateDish.vue'
 import { ref } from "vue";
 
 const allDish = ref([]);
