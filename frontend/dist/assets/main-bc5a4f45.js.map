@@ -1,1 +1,0 @@
-{"version":3,"file":"main-bc5a4f45.js","sources":["../../src/main2.js"],"sourcesContent":["import './assets/main.css'\n\nimport { createApp } from 'vue'\nimport Weather from './Weather.vue'\n\ncreateApp(Weather).mount('#app')\n"],"names":["createApp","Weather"],"mappings":"iDAKAA,EAAUC,CAAO,EAAE,MAAM,MAAM"}
