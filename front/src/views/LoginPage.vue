@@ -20,7 +20,7 @@
       ></Button>
       <div class="description">{{ description }}</div>
     </div>
-    <ErrorVue v-show="errorMassage" :msg="errorMassage"/>
+    <ErrorVue class="container_error" v-show="errorMassage" :msg="errorMassage"/>
   </div>
 </template>
 
@@ -35,7 +35,7 @@ import ErrorVue from "../components/UI/forms/ErrorVue.vue"
 
 const login = ref("");
 const password = ref("");
-const checked = ref(false); //регистрация true
+const checked = ref(false);
 const authHeader = ref("Вход");
 const description = ref(
   "*После регистрации вам будет доступно добавление блюд в меню"
@@ -85,6 +85,9 @@ main {
   align-items: center;
   justify-content: space-evenly;
   height: 100vh;
+  &_error{
+    height: 40px;
+  }
   &_auth {
     display: flex;
     width: 500px;

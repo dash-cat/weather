@@ -53,11 +53,7 @@ export async function sendDish(dish: Dish) {
   console.log(response)
 }
 
-/**
- * 
- * @return {Promise} 
- */
-export async function getmenu() {
+export async function getmenu(): Promise<{ id: number; name: string; compound: string; description: string; image: string; }[]| undefined> {
   try {
     const response = await request(`${HOST}/menu`)
     return response

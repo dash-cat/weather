@@ -95,7 +95,6 @@ async function init() {
         `${body.login}`,
         `${body.password}`
       );
-      console.log("user", user);
       const session = await sessionStorage.createSession(user.login);
       response.cookie("Token", session.token);
       response.send(makeRedirectResponse("/newdish"));
@@ -105,14 +104,15 @@ async function init() {
   app.post("/newdish", async (request, response) => {
     const { body } = request;
     withErrorHandler(response, async () => {
-      console.log("ree", body);
-      dishStorage.createDish(body);
+      const dish = dishStorage.createDish(body);
+      return response.send(dish)
     });
   });
+
   app.get("/menu", async (request, response) => {
     withErrorHandler(response, async () => {
       const menu = await dishStorage.getMenu();
-      console.log("menu", menu);
+      console.log(menu)
       return response.send(menu);
     });
   });

@@ -191,7 +191,7 @@ class DishStorage extends UserStorage{
     /**
    * @param {Dish} dish
    */
-    async  createDish(dish) {
+    async createDish(dish) {
       console.log('Dish', { ...dish })
       const dishes = await this.client.dish.create({
         data: {

@@ -24,7 +24,7 @@
     </div>
   </div>
 </template>
-<!-- необходимо сделать удаление данных после отправки формы (textName) -->
+
 <script setup lang="ts">
 import ImageUpload from "../components/UI/input/ImageUpload.vue";
 import Button from "../components/UI/button/ButtonElement.vue";
@@ -44,7 +44,8 @@ type Dish = {
   name: string;
   compound: string;
   description: string;
-}
+  image: string;
+};
 
 async function saveDish(
   name: string,
@@ -57,17 +58,16 @@ async function saveDish(
     name: name,
     compound: compound,
     description: description,
+    image: dishImage.value,
   };
   textName.value = "";
   textCompound.value = "";
   textDescription.value = "";
   dishImage.value = "";
-  const dishes = await sendDish(dish.value);
-  console.log("dish", dishes);
+  await sendDish(dish);
 }
 
 function upload(image: string) {
-  dish.value.image = image;
   dishImage.value = image;
 }
 </script>

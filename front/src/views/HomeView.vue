@@ -22,17 +22,11 @@ import TemplateDish from "../components/UI/forms/TemplateDish.vue";
 import { getmenu } from "../api";
 import { ref, onMounted } from "vue";
 
-type Dish = {
-  id: number;
-  name: string;
-  compound: string;
-  description: string;
-  image: string;
-}
 
-const menu = ref<Dish[]>([]);
+const menu = ref<{ id: number; name: string; compound: string; description: string; image: string; }[]>([]);
 
-onMounted(async () => {
+
+onMounted(async (): Promise<void> => {
   menu.value = await getmenu();
 });
 

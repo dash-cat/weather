@@ -21,7 +21,7 @@ export default {
       }
     }
   }
-} // missing closure added
+}
 </script>
 
  <style>
