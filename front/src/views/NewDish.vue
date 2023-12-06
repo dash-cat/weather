@@ -1,6 +1,11 @@
 <template>
   <div class="container">
-    <TemplateDish props="{{allDish}}"/>
+    <TemplateDish
+      :dishImage="dishImage"
+      :textName="textName"
+      :textCompound="textCompound"
+      :textDescription="textDescription"
+    />
     <div class="container_dish">
       <FormEl msg="Название блюда" v-model="textName" />
       <FormEl msg="Состав" area="true" v-model="textCompound" />
@@ -10,46 +15,60 @@
         <ImageUpload @upload="upload" />
       </div>
       <Button
-        msg="Предпросмотр блюда"
+        msg="Установить блюдо в меню"
         @click="saveDish(textName, textCompound, textDescription)"
       ></Button>
-      <Button msg="Установить блюдо в меню" @click="sendToDb(allDish)"></Button>
       <div class="container_hint">
-        <span>Заполните все поля и нажмите Предпросмотр</span>
+        <span>Заполните все поля и подтвердите</span>
       </div>
     </div>
   </div>
 </template>
-<!-- необходимо сделать удаление данных после отправки формы -->
-<script setup>
+<!-- необходимо сделать удаление данных после отправки формы (textName) -->
+<script setup lang="ts">
 import ImageUpload from "../components/UI/input/ImageUpload.vue";
 import Button from "../components/UI/button/ButtonElement.vue";
 import FormEl from "../components/UI/forms/FormEl.vue";
-import TemplateDish from '../components/TemplateDish.vue'
+import TemplateDish from "../components/UI/forms/TemplateDish.vue";
+import { sendDish } from "../api";
 import { ref } from "vue";
 
-const allDish = ref([]);
-const dish = {};
+const textName = ref("");
+const textCompound = ref("");
+const textDescription = ref("");
+const dishImage = ref("");
+const dish = ref({});
 
-function sendToDb(array) {
-  if (!array.length) return;
-
-  this.$store.commit("addDish", array);
-  console.log(array);
+type Dish = {
+  id: number;
+  name: string;
+  compound: string;
+  description: string;
 }
 
-function saveDish(name, compound, description) {
+async function saveDish(
+  name: string,
+  compound: string,
+  description: string
+): Promise<void> {
   if (!name || !compound || !description) return;
-  dish.id = Date.now();
-  dish.name = name;
-  dish.compound = compound;
-  dish.description = description;
-  allDish.value.push(dish);
+  let dish: Dish = {
+    id: Date.now(),
+    name: name,
+    compound: compound,
+    description: description,
+  };
+  textName.value = "";
+  textCompound.value = "";
+  textDescription.value = "";
+  dishImage.value = "";
+  const dishes = await sendDish(dish.value);
+  console.log("dish", dishes);
 }
 
-function upload(image) {
-  console.log(image);
-  dish.image = image;
+function upload(image: string) {
+  dish.value.image = image;
+  dishImage.value = image;
 }
 </script>
 
@@ -60,30 +79,7 @@ function upload(image) {
   height: 100%;
   align-items: center;
   flex-direction: column;
-  &_template {
-    width: 300px;
-    height: 400px;
-    background-color: currentColor;
-    margin-bottom: 40px;
-    margin-top: 40px;
-    border-radius: 20px;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
-    &_view {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: space-between;
-      height: 360px;
-      padding: 10px;
-      &_description {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-      }
-    }
-  }
+
   &_dish {
     gap: 10px;
     display: flex;

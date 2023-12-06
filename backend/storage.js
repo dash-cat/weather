@@ -1,5 +1,4 @@
 //@ts-check
-const { stat, writeFile, readFile, copyFile } = require("fs/promises");
 const { createHash, randomBytes } = require("crypto");
 const { salt } = require("./secret.json");
 const { PrismaClient } = require("@prisma/client");
@@ -18,6 +17,16 @@ const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000;
  * @property {string} username
  * @property {string} token
  * @property {Date} created
+ */
+
+
+/**
+ * @typedef {Object} Dish
+ * @property {string} id
+ * @property {string} name
+ * @property {string} compound
+ * @property {string} description
+ * @property {string} image
  */
 
 /**
@@ -123,23 +132,23 @@ class SessionStorage extends Storage {
 
   /**
    *
-   * @param {string} username
+   * @param {string} login
    * @returns {Promise<Session>}
    */
-  async createSession(username) {
-    const sessionUser = await this.client.session.findFirst({
-      where: { username },
+  async createSession(login) {
+    const user = await this.client.user.findFirst({
+      where: { login },
     });
-    if (!sessionUser) {
+    if (!user) {
       throw new StorageError(
-        `Не удалось создать сессию: пользователя ${username} не существует`
+        `Не удалось создать сессию: пользователя ${login} не существует`
       );
     }
 
     const token = generateToken();
     const session = await this.client.session.create({
       data: {
-        username,
+        username: login,
         token,
         created: new Date(),
       },
@@ -166,8 +175,51 @@ class SessionStorage extends Storage {
   }
 }
 
+class DishStorage extends UserStorage{
+  /**
+   *
+   * @param {PrismaClient} client
+   * @param {UserStorage} userStorage
+   */
+  constructor(client, userStorage) {
+    super(client);
+    /** @type {UserStorage} */
+    this.userStorage = userStorage;
+  }
+
+
+    /**
+   * @param {Dish} dish
+   */
+    async  createDish(dish) {
+      console.log('Dish', { ...dish })
+      const dishes = await this.client.dish.create({
+        data: {
+          name: dish.name,
+          compound: dish.compound,
+          description: dish.description,
+          image: dish.image
+
+        }
+      })
+      return dishes
+    }
+    /**
+     * 
+     * @returns {Promise<any>}  
+     */
+    async getMenu() {
+      return await this.client.dish.findMany()
+    }
+
+
+}
+
+
+
 module.exports = {
   UserStorage,
   StorageError,
   SessionStorage,
+  DishStorage
 };

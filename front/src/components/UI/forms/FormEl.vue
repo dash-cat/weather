@@ -4,20 +4,21 @@
         <textarea
             class="container_area"
             v-if="props.area"
-            :value="modelValue"
-            @input="$emit('update:modelValue', $event.target.value)"
+            :value="props.modelValue"
+            @input="$emit('update:modelValue',  $event.target.value)"
         ></textarea>
         <InputEl 
             class="container_input"
             v-else
-            :value="modelValue"
-            @input="$emit('update:modelValue', $event.target.value)"
+            :value="props.modelValue"
+            @update:modelValue="$emit('update:modelValue', $event)"
         />
     </div>
 </template>
 
 <script setup>
 import InputEl from '../input/InputEl.vue'
+
 const props = defineProps(['msg', 'area','modelValue'])
 defineEmits(['update:modelValue'])
 </script>

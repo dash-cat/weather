@@ -21,3 +21,11 @@ model Session {
   token String
   created DateTime
 }
+
+model Dish {
+  id    Int     @default(autoincrement()) @id
+  name String
+  compound String
+  description String
+  image String
+}

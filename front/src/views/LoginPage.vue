@@ -1,51 +1,79 @@
 <template>
-  <header>
-  </header>
-    <main>
-      <div class="container">
-        <div class="auth">
-         <div class="auth__header">{{ checkbox ? 'Регистрация' : 'Вход' }}</div>
-         <div class="auth__form">
-            <div class="auth__input">
-            <label for="login">Логин&nbsp;&nbsp;&nbsp;</label>
-            <input id="login" type="text" v-model="login">
-            </div>
-            <div class="auth__input">
-              <label for="auth__input__password">Пароль&nbsp;</label>
-              <input id="auth__input__password" type="password" v-model="password">
-            </div>
-            <div class="auth__input">
-              <input id="auth__input__login" type="checkbox" v-model="checkbox">&nbsp;
-              <label for="auth__input__login">Создать нового пользователя*</label>
-            </div>
-          </div>
-        <button class="auth__btn" @click="onClick">Войти</button>
-        <div class="description">{{ description }}</div>
+  <div class="container">
+    <div class="container_auth">
+      <div class="container_auth_header">{{ authHeader }}</div>
+      <div class="container_auth_form">
+        <InputEl label="Логин" type="email" v-model="login" />
       </div>
+      <div class="container_auth_form">
+        <InputEl label="Пароль" type="password" v-model="password" />
+      </div>
+      <div class="container_auth_form">
+        <CheckBox
+          msg="Создать нового пользователя*"
+          type="checkbox"
+          v-model="checked"
+          @change="onCheckboxChange"
+        />
+      </div>
+      <Button msg="Войти" class="container_auth_btn" @click="onClick"
+      ></Button>
+      <div class="description">{{ description }}</div>
     </div>
-  </main>
+    <ErrorVue v-show="errorMassage" :msg="errorMassage"/>
+  </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { ref } from "vue";
+import { signIn } from "../api";
+import InputEl from "../components/UI/input/InputEl.vue";
+import Button from "../components/UI/button/ButtonElement.vue";
+import CheckBox from "../components/UI/input/CheckBox.vue";
+import ErrorVue from "../components/UI/forms/ErrorVue.vue"
 
-import { ref } from 'vue'
-import { signIn } from '../api'
 
-const login = ref('')
-const password = ref('')
-const checkbox = ref(false)
-const description = '*После регистрации вам будет доступно добавление блюд в меню'
+const login = ref("");
+const password = ref("");
+const checked = ref(false); //регистрация true
+const authHeader = ref("Вход");
+const description = ref(
+  "*После регистрации вам будет доступно добавление блюд в меню"
+);
+const errorMassage = ref('')
 
-function onClick () {
-  signIn(login.value, password.value, checkbox.value)
+const onCheckboxChange = () => {
+  checked.value = !checked.value;
+  authHeader.value = checked.value ? "Регистрация" : "Вход";
+};
+
+async function onClick() {
+  if (!login.value || !password.value) return;
+  console.log("logi", login.value, password.value, checked.value);
+
+  try {
+    const errorHandler = await signIn(login.value, password.value, checked.value)
+    if (errorHandler.type === 'error' ) {
+      errorMassage.value = errorHandler.message
+      setTimeout(() => {
+        errorMassage.value = ''
+      }, 1500);
+      console.log('Неверный пароль!')
+    }
+
+  } catch (error) {
+    console.log( error)
+  }
+
 }
+
 </script>
 
-<style scoped lang="scss">
+<style lang="scss" scoped >
 main {
-    display: flex;
-    width: 100%;
-    justify-content: space-around;
+  display: flex;
+  width: 100%;
+  justify-content: space-around;
 }
 .description {
   font-size: 12px;
@@ -57,35 +85,34 @@ main {
   align-items: center;
   justify-content: space-evenly;
   height: 100vh;
-}
-.auth {
-  display: flex;
-  width: 500px;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-  color: azure;
-  justify-content: center;
-  border: 1px solid gray;
-  border-radius: 20px;
-  background: rgb(62 97 141 / 70%);
-  height: 300px;
-  .auth__header {
-    margin-top: 30px;
-    font-size: 20px;
-  }
-  .auth__form {
+  &_auth {
     display: flex;
+    width: 500px;
     flex-direction: column;
-    width: 100%;
-    height: 100%;
     align-items: center;
-    justify-content: space-evenly;
-  }
-  .auth__btn {
-    border-radius: 17px;
-    width: 378px;
+    gap: 15px;
+    color: azure;
+    justify-content: center;
+    border: 1px solid gray;
+    border-radius: 20px;
+    background: rgb(62 97 141 / 70%);
+    height: 300px;
+    &_header {
+      margin-top: 30px;
+      font-size: 20px;
+    }
+    &_form {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: space-evenly;
+    }
+    &_btn {
+      border-radius: 17px;
+      width: 378px;
+    }
   }
 }
-
 </style>

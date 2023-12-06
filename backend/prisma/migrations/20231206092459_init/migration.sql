@@ -16,3 +16,14 @@ CREATE TABLE "Session" (
 
     CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateTable
+CREATE TABLE "Dish" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "compound" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "image" TEXT NOT NULL,
+
+    CONSTRAINT "Dish_pkey" PRIMARY KEY ("id")
+);
